@@ -19,8 +19,6 @@ import skin from "./assets/skinpolish.jpg";
 import highlights from "./assets/highlights.jpg";
 import lowlights from "./assets/lowlights.jpg";
 import relaxing from "./assets/relaxing.jpg";
-import keratin from "./assets/keratin.jpg";
-import step from "./assets/step.jpg";
 import bangs from "./assets/bangs.jpg";
 import bob from "./assets/bob.jpg";
 import layers from "./assets/layers.jpg";
