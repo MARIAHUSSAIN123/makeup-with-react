@@ -31,6 +31,8 @@ import two from "./assets/2.jpg";
 import nikkah from "./assets/nikkah.jpg";
 import model from "./assets/model.jpg";
 import about from "./assets/about.jpg";
+import keratin from "./assets/keratin.jpg";
+import step from "./assets/step.jpg";
 
 // Card Component with AOS fade-up
 function Card({ img, title, price, category }) {
