@@ -63,15 +63,10 @@ function Card({ img, title, price, category, onAddToCart }) {
 
 function App() {
   const [search, setSearch] = useState("");
-<<<<<<< HEAD
   const [isOpen, setIsOpen] = useState(false); 
   const [cart, setCart] = useState([]); 
   const [isCartOpen, setIsCartOpen] = useState(false); 
 
-=======
-const [isOpen, setIsOpen] = useState(false);
-  // Initialize AOS
->>>>>>> d94c3a28053b84cb3ee9f0fb1481c65ee3eba9f6
   useEffect(() => {
     AOS.init({ duration: 1000, offset: 100, once: false });
   }, []);
@@ -168,7 +163,6 @@ const [isOpen, setIsOpen] = useState(false);
   return (
     <div className="overflow-x-hidden bg-gray-50">
       {/* NAVBAR */}
-<<<<<<< HEAD
       <nav className="fixed top-0 left-0 w-full z-[80] bg-white shadow-sm border-b border-gray-100">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -217,71 +211,6 @@ const [isOpen, setIsOpen] = useState(false);
           </div>
         </div>
       </nav>
-=======
-  <nav className="fixed top-0 left-0 w-full z-50 bg-white shadow-sm border-b border-gray-100">
-  <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-    {/* Logo Section */}
-    <div className="flex items-center gap-3">
-      <img src={logo} alt="logo" className="w-10 h-10" />
-      <h1 className="text-2xl font-bold text-pink-600">Makeuplicious</h1>
-    </div>
-
-    {/* Desktop Search (Visible on md+) */}
-    <div className="hidden md:block">
-      <input
-        type="text"
-        placeholder="Search beauty services..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-64 lg:w-80 px-5 py-2 rounded-full border border-pink-200 focus:ring-2 focus:ring-pink-400 outline-none transition-all"
-      />
-    </div>
-
-    {/* Desktop Menu (Visible on md+) */}
-    <ul className="hidden md:flex gap-8 font-medium text-gray-700">
-      <a href="#home" className="hover:text-pink-600"><li>Home</li></a>
-      <a href="#services" className="hover:text-pink-600"><li>Services</li></a>
-      <a href="#hair" className="hover:text-pink-600"><li>Hair</li></a>
-      <a href="#makeup" className="hover:text-pink-600"><li>Makeup</li></a>
-      <a href="#about" className="hover:text-pink-600"><li>About</li></a>
-    </ul>
-
-    {/* Mobile Hamburger Button */}
-    <div className="md:hidden flex items-center">
-      <button onClick={() => setIsOpen(!isOpen)} className="text-gray-700 focus:outline-none">
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          {isOpen ? (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
-          )}
-        </svg>
-      </button>
-    </div>
-  </div>
-
-  {/* Mobile Menu Dropdown */}
-  {isOpen && (
-    <div className="md:hidden bg-white border-t border-gray-100 px-6 py-4 flex flex-col gap-4 animate-fade-in">
-      {/* Mobile Search Input */}
-      <input
-        type="text"
-        placeholder="Search..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full px-4 py-2 rounded-lg border border-pink-100 focus:ring-1 focus:ring-pink-400 outline-none"
-      />
-      <ul className="flex flex-col gap-4 font-medium text-gray-700">
-        <a href="#home" onClick={() => setIsOpen(false)} className="hover:text-pink-600"><li>Home</li></a>
-        <a href="#services" onClick={() => setIsOpen(false)} className="hover:text-pink-600"><li>Services</li></a>
-        <a href="#hair" onClick={() => setIsOpen(false)} className="hover:text-pink-600"><li>Hair</li></a>
-        <a href="#makeup" onClick={() => setIsOpen(false)} className="hover:text-pink-600"><li>Makeup</li></a>
-        <a href="#about" onClick={() => setIsOpen(false)} className="hover:text-pink-600"><li>About</li></a>
-      </ul>
-    </div>
-  )}
-</nav>
->>>>>>> d94c3a28053b84cb3ee9f0fb1481c65ee3eba9f6
 
       {/* CART DRAWER (Overlap Fixed) */}
       <div className={`fixed inset-0 z-[100] transition-all duration-300 ${isCartOpen ? "visible" : "invisible"}`}>
