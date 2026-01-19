@@ -75,7 +75,7 @@ function App() {
     AOS.refresh();
   }, [search]);
 
-  // Original Data Array
+  // Data Array
   const allData = [
     { img: wax, title: "Waxing", price: "$16.00", section: "services", category: "Skin" },
     { img: thread, title: "Threading", price: "$21.15", section: "services", category: "Skin" },
@@ -103,26 +103,42 @@ function App() {
     { img: model, title: "Model Makeup", price: "$18.40", section: "makeup", category: "Professional" },
   ];
 
+  // Cart Functions with Quantity
   const addToCart = (item) => {
-    setCart([...cart, item]);
+    const existingItem = cart.find((i) => i.title === item.title);
+    if (existingItem) {
+      setCart(cart.map((i) => i.title === item.title ? { ...i, quantity: i.quantity + 1 } : i));
+    } else {
+      setCart([...cart, { ...item, quantity: 1 }]);
+    }
+    
     Swal.fire({
-      title: 'Success!',
-      text: `${item.title} added to cart`,
+      title: 'Added!',
+      text: `${item.title} added to selection`,
       icon: 'success',
       toast: true,
       position: 'top-end',
       showConfirmButton: false,
-      timer: 1500,
-      timerProgressBar: true
+      timer: 1000
     });
   };
 
-  const removeFromCart = (index) => {
-    setCart(cart.filter((_, i) => i !== index));
+  const updateQuantity = (title, delta) => {
+    setCart(cart.map(item => {
+      if (item.title === title) {
+        const newQty = item.quantity + delta;
+        return newQty > 0 ? { ...item, quantity: newQty } : item;
+      }
+      return item;
+    }));
+  };
+
+  const removeFromCart = (title) => {
+    setCart(cart.filter((item) => item.title !== title));
   };
 
   const calculateTotal = () => {
-    return cart.reduce((acc, item) => acc + parseFloat(item.price.replace('$', '')), 0).toFixed(2);
+    return cart.reduce((acc, item) => acc + (parseFloat(item.price.replace('$', '')) * item.quantity), 0).toFixed(2);
   };
 
   const generateInvoice = () => {
@@ -136,21 +152,26 @@ function App() {
     doc.line(20, 35, 190, 35);
 
     let y = 45;
-    doc.text("Service Name", 20, y);
-    doc.text("Price", 170, y);
+    doc.text("Service", 20, y);
+    doc.text("Qty", 100, y);
+    doc.text("Price", 140, y);
+    doc.text("Subtotal", 170, y);
     doc.line(20, y + 2, 190, y + 2);
 
     y += 10;
     cart.forEach((item) => {
+      const priceVal = parseFloat(item.price.replace('$', ''));
       doc.text(`${item.title}`, 20, y);
-      doc.text(`${item.price}`, 170, y);
+      doc.text(`${item.quantity}`, 100, y);
+      doc.text(`$${priceVal.toFixed(2)}`, 140, y);
+      doc.text(`$${(priceVal * item.quantity).toFixed(2)}`, 170, y);
       y += 8;
     });
 
     doc.line(20, y, 190, y);
     doc.setFontSize(14);
-    doc.text(`Total Payable: $${calculateTotal()}`, 145, y + 10);
-    doc.save("Makeuplicious_Order.pdf");
+    doc.text(`Total Payable: $${calculateTotal()}`, 140, y + 10);
+    doc.save("Makeuplicious_Invoice.pdf");
   };
 
   const filteredData = allData.filter((item) =>
@@ -188,7 +209,6 @@ function App() {
               <a href="#makeup" className="hover:text-pink-600"><li>Makeup</li></a>
             </ul>
             
-            {/* CART BUTTON */}
             <button 
               onClick={() => setIsCartOpen(true)}
               className="relative p-2.5 bg-pink-100 text-pink-600 rounded-full hover:bg-pink-200 transition-colors"
@@ -198,7 +218,7 @@ function App() {
               </svg>
               {cart.length > 0 && (
                 <span className="absolute -top-1 -right-1 bg-pink-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-                  {cart.length}
+                  {cart.reduce((a, b) => a + b.quantity, 0)}
                 </span>
               )}
             </button>
@@ -210,30 +230,56 @@ function App() {
             </button>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {isOpen && (
+          <div className="md:hidden bg-white border-t border-gray-100 px-6 py-4 flex flex-col gap-4">
+            <input
+              type="text"
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-4 py-2 rounded-lg border border-pink-100 outline-none"
+            />
+            <ul className="flex flex-col gap-4 font-medium text-gray-700">
+              <a href="#home" onClick={() => setIsOpen(false)}>Home</a>
+              <a href="#services" onClick={() => setIsOpen(false)}>Services</a>
+              <a href="#hair" onClick={() => setIsOpen(false)}>Hair</a>
+              <a href="#makeup" onClick={() => setIsOpen(false)}>Makeup</a>
+            </ul>
+          </div>
+        )}
       </nav>
 
-      {/* CART DRAWER (Overlap Fixed) */}
+      {/* CART DRAWER */}
       <div className={`fixed inset-0 z-[100] transition-all duration-300 ${isCartOpen ? "visible" : "invisible"}`}>
-        <div className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${isCartOpen ? "opacity-100" : "opacity-0"}`} onClick={() => setIsCartOpen(false)}></div>
-        <div className={`absolute right-0 top-0 h-full w-full max-w-[350px] bg-white shadow-2xl transition-transform duration-300 p-6 flex flex-col ${isCartOpen ? "translate-x-0" : "translate-x-full"}`}>
-          <div className="flex justify-between items-center mb-6 border-b pb-4">
-            <h2 className="text-xl font-bold text-pink-600">My Selection</h2>
-            <button onClick={() => setIsCartOpen(false)} className="text-gray-400 hover:text-pink-600 transition text-xl font-bold">✕</button>
+        <div className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity ${isCartOpen ? "opacity-100" : "opacity-0"}`} onClick={() => setIsCartOpen(false)}></div>
+        <div className={`absolute right-0 top-0 h-full w-full max-w-[380px] bg-white shadow-2xl transition-transform duration-300 p-6 flex flex-col ${isCartOpen ? "translate-x-0" : "translate-x-full"}`}>
+          <div className="flex justify-between items-center mb-6 border-b pb-4 text-pink-600">
+            <h2 className="text-xl font-bold">Selected Services ({cart.length})</h2>
+            <button onClick={() => setIsCartOpen(false)} className="text-2xl font-bold">✕</button>
           </div>
 
-          <div className="flex-grow overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+          <div className="flex-grow overflow-y-auto space-y-4">
             {cart.length === 0 ? (
-              <p className="text-center text-gray-400 mt-10">Empty cart!</p>
+              <div className="text-center mt-20 text-gray-400">Your cart is empty</div>
             ) : (
               cart.map((item, index) => (
-                <div key={index} className="flex gap-3 bg-white border border-gray-100 p-2 rounded-xl shadow-sm items-center">
-                  <img src={item.img} className="w-12 h-12 object-cover rounded-lg" alt="" />
+                <div key={index} className="flex gap-3 bg-white border border-gray-100 p-3 rounded-xl shadow-sm items-center">
+                  <img src={item.img} className="w-16 h-16 object-cover rounded-lg" alt="" />
                   <div className="flex-grow">
-                    <h4 className="text-sm font-semibold text-gray-800 leading-tight">{item.title}</h4>
-                    <p className="text-pink-600 text-xs font-bold">{item.price}</p>
+                    <h4 className="text-sm font-bold text-gray-800 leading-tight">{item.title}</h4>
+                    <p className="text-pink-600 text-sm font-bold">{item.price}</p>
+                    
+                    {/* Quantity Controls */}
+                    <div className="flex items-center gap-3 mt-2">
+                      <button onClick={() => updateQuantity(item.title, -1)} className="w-6 h-6 border border-pink-200 rounded-full flex items-center justify-center text-pink-600 font-bold">-</button>
+                      <span className="text-sm font-bold">{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.title, 1)} className="w-6 h-6 border border-pink-200 rounded-full flex items-center justify-center text-pink-600 font-bold">+</button>
+                    </div>
                   </div>
-                  <button onClick={() => removeFromCart(index)} className="text-gray-300 hover:text-red-500 transition">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  <button onClick={() => removeFromCart(item.title)} className="text-gray-300 hover:text-red-500 p-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                   </button>
                 </div>
               ))
@@ -242,16 +288,19 @@ function App() {
 
           {cart.length > 0 && (
             <div className="mt-6 border-t pt-4">
-              <div className="flex justify-between font-bold text-lg mb-4"><span>Total:</span><span className="text-pink-600">${calculateTotal()}</span></div>
-              <button onClick={generateInvoice} className="w-full bg-pink-600 text-white py-3 rounded-xl font-bold hover:bg-pink-700 transition shadow-lg flex items-center justify-center gap-2">
-                Download Invoice (PDF)
+              <div className="flex justify-between font-bold text-xl mb-4">
+                <span>Total:</span>
+                <span className="text-pink-600">${calculateTotal()}</span>
+              </div>
+              <button onClick={generateInvoice} className="w-full bg-pink-600 text-white py-4 rounded-xl font-bold hover:bg-pink-700 transition shadow-lg flex items-center justify-center gap-2">
+                Download PDF Invoice
               </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Hero Section */}
+      {/* Hero */}
       <section className="relative h-screen flex items-center justify-center text-white pt-20" id="home">
         <img src={heroImg} alt="Hero" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-black/40"></div>
@@ -261,27 +310,12 @@ function App() {
         </div>
       </section>
 
-      {/* Why Choose Us */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-5 text-center">
-          <h2 className="text-3xl font-bold text-pink-600 mb-12" data-aos="fade-down">Why Choose Us</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {["Certified Artists", "Premium Products", "Hygienic & Safe", "Bridal Specialists"].map((t, i) => (
-              <div key={i} className="p-6 rounded-2xl border shadow-sm" data-aos="flip-left" data-aos-delay={i * 100}>
-                <h3 className="font-semibold text-lg mb-2 text-pink-600">{t}</h3>
-                <p className="text-gray-500 text-sm">Professional care for you.</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Content Sections */}
+      {/* Services Sections */}
       {["services", "hair", "makeup"].map(sec => (
         getSectionItems(sec).length > 0 && (
           <section className="py-24" id={sec} key={sec}>
             <div className="container px-5 mx-auto">
-              <h1 className="text-center text-3xl font-bold text-pink-600 mb-12 capitalize">{sec === "services" ? "Services We Offer" : sec}</h1>
+              <h1 className="text-center text-3xl font-bold text-pink-600 mb-12 capitalize">{sec === "services" ? "Our Services" : sec}</h1>
               <div className="flex flex-wrap -m-4">
                 {getSectionItems(sec).map((item, index) => <Card key={index} {...item} onAddToCart={addToCart} />)}
               </div>
@@ -293,7 +327,8 @@ function App() {
       {/* Footer */}
       <footer className="bg-gray-900 text-gray-300 py-12 text-center">
         <h2 className="text-xl font-bold text-pink-500">Makeuplicious</h2>
-        <p className="mt-4">© 2026 All rights reserved.</p>
+        <p className="mt-4 italic">Karachi's Finest Beauty Destination</p>
+        <p className="mt-4 text-xs">© 2026 All rights reserved.</p>
       </footer>
     </div>
   );
