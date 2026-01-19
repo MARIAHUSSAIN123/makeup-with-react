@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
 
-// AOS Imports
+// External Libraries
 import AOS from "aos";
 import "aos/dist/aos.css";
+import { jsPDF } from "jspdf";
+import Swal from "sweetalert2";
 
 // --- All Your Original Image Imports ---
 import logo from "./assets/logo.png";
@@ -31,21 +33,26 @@ import two from "./assets/2.jpg";
 import nikkah from "./assets/nikkah.jpg";
 import model from "./assets/model.jpg";
 import about from "./assets/about.jpg";
+import keratin from "./assets/keratin.jpg";
+import step from "./assets/step.jpg";
 
-// Card Component with AOS fade-up
-function Card({ img, title, price, category }) {
+// Card Component
+function Card({ img, title, price, category, onAddToCart }) {
   return (
     <div className="lg:w-1/4 md:w-1/2 p-4 w-full" data-aos="fade-up">
-      <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+      <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-100">
         <div className="relative h-56 overflow-hidden rounded-t-2xl group">
           <img src={img} alt={title} className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-110" />
           <div className="absolute inset-0 bg-black/10 group-hover:bg-black/25 transition"></div>
         </div>
         <div className="p-4 text-center">
-          <h3 className="text-gray-400 text-xs tracking-widest mb-1">{category}</h3>
+          <h3 className="text-gray-400 text-[10px] uppercase tracking-widest mb-1">{category}</h3>
           <h2 className="text-gray-900 text-lg font-semibold">{title}</h2>
-          <p className="mt-1 text-pink-600 font-medium">{price}</p>
-          <button className="w-full mt-4 bg-pink-600 hover:bg-pink-700 text-white py-2 rounded-full text-sm font-semibold transition shadow-md hover:shadow-lg">
+          <p className="mt-1 text-pink-600 font-bold">${parseFloat(price.replace('$', '')).toFixed(2)}</p>
+          <button 
+            onClick={() => onAddToCart({ title, price, img })}
+            className="w-full mt-4 bg-pink-600 hover:bg-pink-700 text-white py-2 rounded-full text-sm font-semibold transition shadow-md active:scale-95"
+          >
             Add to Cart
           </button>
         </div>
@@ -56,22 +63,19 @@ function Card({ img, title, price, category }) {
 
 function App() {
   const [search, setSearch] = useState("");
+  const [isOpen, setIsOpen] = useState(false); 
+  const [cart, setCart] = useState([]); 
+  const [isCartOpen, setIsCartOpen] = useState(false); 
 
-  // Initialize AOS
   useEffect(() => {
-    AOS.init({
-      duration: 1000, // Animation ki speed
-      offset: 100,    // Kitne pixels pehle animation start ho
-      once: false,    // Scroll up/down dono pe chale
-    });
+    AOS.init({ duration: 1000, offset: 100, once: false });
   }, []);
 
-  // Refresh AOS whenever search results change
   useEffect(() => {
     AOS.refresh();
   }, [search]);
 
-  // Unified Data Array
+  // Original Data Array
   const allData = [
     { img: wax, title: "Waxing", price: "$16.00", section: "services", category: "Skin" },
     { img: thread, title: "Threading", price: "$21.15", section: "services", category: "Skin" },
@@ -99,6 +103,56 @@ function App() {
     { img: model, title: "Model Makeup", price: "$18.40", section: "makeup", category: "Professional" },
   ];
 
+  const addToCart = (item) => {
+    setCart([...cart, item]);
+    Swal.fire({
+      title: 'Success!',
+      text: `${item.title} added to cart`,
+      icon: 'success',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 1500,
+      timerProgressBar: true
+    });
+  };
+
+  const removeFromCart = (index) => {
+    setCart(cart.filter((_, i) => i !== index));
+  };
+
+  const calculateTotal = () => {
+    return cart.reduce((acc, item) => acc + parseFloat(item.price.replace('$', '')), 0).toFixed(2);
+  };
+
+  const generateInvoice = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(22);
+    doc.setTextColor(219, 39, 119); 
+    doc.text("Makeuplicious Invoice", 20, 20);
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 30);
+    doc.line(20, 35, 190, 35);
+
+    let y = 45;
+    doc.text("Service Name", 20, y);
+    doc.text("Price", 170, y);
+    doc.line(20, y + 2, 190, y + 2);
+
+    y += 10;
+    cart.forEach((item) => {
+      doc.text(`${item.title}`, 20, y);
+      doc.text(`${item.price}`, 170, y);
+      y += 8;
+    });
+
+    doc.line(20, y, 190, y);
+    doc.setFontSize(14);
+    doc.text(`Total Payable: $${calculateTotal()}`, 145, y + 10);
+    doc.save("Makeuplicious_Order.pdf");
+  };
+
   const filteredData = allData.filter((item) =>
     item.title.toLowerCase().includes(search.toLowerCase()) ||
     item.category.toLowerCase().includes(search.toLowerCase())
@@ -107,35 +161,98 @@ function App() {
   const getSectionItems = (sectionName) => filteredData.filter(item => item.section === sectionName);
 
   return (
-    <div className="overflow-x-hidden">
+    <div className="overflow-x-hidden bg-gray-50">
       {/* NAVBAR */}
-      <nav className="fixed top-0 left-0 w-full z-50 bg-white shadow-sm border-b border-gray-100">
+      <nav className="fixed top-0 left-0 w-full z-[80] bg-white shadow-sm border-b border-gray-100">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={logo} alt="logo" className="w-10 h-10" />
             <h1 className="text-2xl font-bold text-pink-600">Makeuplicious</h1>
           </div>
+
           <div className="hidden md:block">
             <input
               type="text"
-              placeholder="Search for beauty services..."
+              placeholder="Search services..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-80 px-5 py-2 rounded-full border border-pink-200 focus:ring-2 focus:ring-pink-400 outline-none transition-all"
+              className="w-64 lg:w-80 px-5 py-2 rounded-full border border-pink-200 outline-none focus:ring-2 focus:ring-pink-400 transition-all"
             />
           </div>
-          <ul className="hidden md:flex gap-8 font-medium text-gray-700">
-            <a href="#home" className="hover:text-pink-600"><li>Home</li></a>
-            <a href="#services" className="hover:text-pink-600"><li>Services</li></a>
-            <a href="#hair" className="hover:text-pink-600"><li>Hair</li></a>
-            <a href="#makeup" className="hover:text-pink-600"><li>Makeup</li></a>
-            <a href="#about" className="hover:text-pink-600"><li>About</li></a>
-          </ul>
+
+          <div className="flex items-center gap-4">
+            <ul className="hidden md:flex gap-6 font-medium text-gray-700 mr-4">
+              <a href="#home" className="hover:text-pink-600"><li>Home</li></a>
+              <a href="#services" className="hover:text-pink-600"><li>Services</li></a>
+              <a href="#hair" className="hover:text-pink-600"><li>Hair</li></a>
+              <a href="#makeup" className="hover:text-pink-600"><li>Makeup</li></a>
+            </ul>
+            
+            {/* CART BUTTON */}
+            <button 
+              onClick={() => setIsCartOpen(true)}
+              className="relative p-2.5 bg-pink-100 text-pink-600 rounded-full hover:bg-pink-200 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              {cart.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-pink-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                  {cart.length}
+                </span>
+              )}
+            </button>
+
+            <button onClick={() => setIsOpen(!isOpen)} className="md:hidden text-gray-700">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {isOpen ? <path d="M6 18L18 6M6 6l12 12" /> : <path d="M4 6h16M4 12h16m-7 6h7" />}
+              </svg>
+            </button>
+          </div>
         </div>
       </nav>
 
-      {/* HERO SECTION */}
-      <section className="relative h-screen flex items-center justify-center text-white" id="home">
+      {/* CART DRAWER (Overlap Fixed) */}
+      <div className={`fixed inset-0 z-[100] transition-all duration-300 ${isCartOpen ? "visible" : "invisible"}`}>
+        <div className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${isCartOpen ? "opacity-100" : "opacity-0"}`} onClick={() => setIsCartOpen(false)}></div>
+        <div className={`absolute right-0 top-0 h-full w-full max-w-[350px] bg-white shadow-2xl transition-transform duration-300 p-6 flex flex-col ${isCartOpen ? "translate-x-0" : "translate-x-full"}`}>
+          <div className="flex justify-between items-center mb-6 border-b pb-4">
+            <h2 className="text-xl font-bold text-pink-600">My Selection</h2>
+            <button onClick={() => setIsCartOpen(false)} className="text-gray-400 hover:text-pink-600 transition text-xl font-bold">✕</button>
+          </div>
+
+          <div className="flex-grow overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+            {cart.length === 0 ? (
+              <p className="text-center text-gray-400 mt-10">Empty cart!</p>
+            ) : (
+              cart.map((item, index) => (
+                <div key={index} className="flex gap-3 bg-white border border-gray-100 p-2 rounded-xl shadow-sm items-center">
+                  <img src={item.img} className="w-12 h-12 object-cover rounded-lg" alt="" />
+                  <div className="flex-grow">
+                    <h4 className="text-sm font-semibold text-gray-800 leading-tight">{item.title}</h4>
+                    <p className="text-pink-600 text-xs font-bold">{item.price}</p>
+                  </div>
+                  <button onClick={() => removeFromCart(index)} className="text-gray-300 hover:text-red-500 transition">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+
+          {cart.length > 0 && (
+            <div className="mt-6 border-t pt-4">
+              <div className="flex justify-between font-bold text-lg mb-4"><span>Total:</span><span className="text-pink-600">${calculateTotal()}</span></div>
+              <button onClick={generateInvoice} className="w-full bg-pink-600 text-white py-3 rounded-xl font-bold hover:bg-pink-700 transition shadow-lg flex items-center justify-center gap-2">
+                Download Invoice (PDF)
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Hero Section */}
+      <section className="relative h-screen flex items-center justify-center text-white pt-20" id="home">
         <img src={heroImg} alt="Hero" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-black/40"></div>
         <div className="relative z-10 text-center" data-aos="zoom-in">
@@ -144,8 +261,8 @@ function App() {
         </div>
       </section>
 
-      {/* WHY CHOOSE US (Features) */}
-      <section className="py-20 bg-white overflow-hidden">
+      {/* Why Choose Us */}
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-5 text-center">
           <h2 className="text-3xl font-bold text-pink-600 mb-12" data-aos="fade-down">Why Choose Us</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -159,90 +276,24 @@ function App() {
         </div>
       </section>
 
-      {/* DYNAMIC SECTIONS WITH AOS */}
-      {getSectionItems("services").length > 0 && (
-        <section className="py-24" id="services">
-          <div className="container px-5 mx-auto">
-            <h1 className="text-center text-3xl font-bold text-pink-600 mb-12" data-aos="fade-down">Services We Offer</h1>
-            <div className="flex flex-wrap -m-4">
-              {getSectionItems("services").map((item, index) => <Card key={index} {...item} />)}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {getSectionItems("hair").length > 0 && (
-        <section className="py-24" id="hair">
-          <div className="container px-5 mx-auto">
-            <h1 className="text-center text-3xl font-bold text-pink-600 mb-12" data-aos="fade-down">Hair Styling</h1>
-            <div className="flex flex-wrap -m-4">
-              {getSectionItems("hair").map((item, index) => <Card key={index} {...item} />)}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {getSectionItems("makeup").length > 0 && (
-        <section className="py-24" id="makeup">
-          <div className="container px-5 mx-auto">
-            <h1 className="text-center text-3xl font-bold text-pink-600 mb-12" data-aos="fade-down">Makeups</h1>
-            <div className="flex flex-wrap -m-4">
-              {getSectionItems("makeup").map((item, index) => <Card key={index} {...item} />)}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ABOUT SECTION */}
-      <section className="bg-pink-50 py-24 overflow-hidden" id="about">
-        <div className="container mx-auto flex flex-col md:flex-row items-center px-5">
-          <div className="md:w-1/2 mb-10 md:mb-0" data-aos="fade-right">
-            <h1 className="text-4xl font-bold text-gray-900 mb-6">Enhancing Your Natural Beauty</h1>
-            <p className="text-gray-600 mb-6 italic">"Expert makeup that highlights your soul."</p>
-            <button className="bg-pink-600 text-white px-8 py-3 rounded-full hover:bg-pink-700 transition">Book Now</button>
-          </div>
-          <div className="md:w-1/2" data-aos="fade-left">
-            <img src={about} alt="about" className="rounded-3xl shadow-2xl" />
-          </div>
-        </div>
-      </section>
-
-      {/* GALLERY */}
-      <section className="py-24 bg-white overflow-hidden">
-        <div className="container mx-auto px-5 text-center">
-          <h2 className="text-3xl font-bold text-pink-600 mb-12" data-aos="fade-down">Our Masterpieces</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[glam, bride, smoky, party, model, nikkah, two, download].map((img, index) => (
-              <div key={index} className="overflow-hidden rounded-xl" data-aos="zoom-in" data-aos-delay={index * 50}>
-                <img src={img} alt="work" className="w-full h-full object-cover hover:scale-110 transition duration-500" />
+      {/* Content Sections */}
+      {["services", "hair", "makeup"].map(sec => (
+        getSectionItems(sec).length > 0 && (
+          <section className="py-24" id={sec} key={sec}>
+            <div className="container px-5 mx-auto">
+              <h1 className="text-center text-3xl font-bold text-pink-600 mb-12 capitalize">{sec === "services" ? "Services We Offer" : sec}</h1>
+              <div className="flex flex-wrap -m-4">
+                {getSectionItems(sec).map((item, index) => <Card key={index} {...item} onAddToCart={addToCart} />)}
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
+          </section>
+        )
+      ))}
 
-      {/* TESTIMONIALS */}
-      <section className="bg-pink-50 py-24">
-        <div className="container mx-auto px-5">
-          <h2 className="text-center text-3xl font-bold text-pink-600 mb-12" data-aos="fade-up">Client Love</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {["Ayesha Khan", "Maham Ali", "Sara Ahmed"].map((name, i) => (
-              <div key={i} className="bg-white p-8 rounded-2xl shadow-sm" data-aos="fade-up" data-aos-delay={i * 200}>
-                <p className="text-gray-600 mb-4 italic">“Outstanding experience! Highly recommended.”</p>
-                <h4 className="font-bold text-pink-600">— {name}</h4>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="bg-gray-900 text-gray-300 py-16 text-center">
-        <div data-aos="fade-in">
-          <h2 className="text-2xl font-bold text-pink-500 mb-4">Makeuplicious</h2>
-          <p className="mb-8">Your trusted beauty partner in Karachi.</p>
-          <p className="text-gray-500">© 2026 Makeuplicious. All rights reserved.</p>
-        </div>
+      {/* Footer */}
+      <footer className="bg-gray-900 text-gray-300 py-12 text-center">
+        <h2 className="text-xl font-bold text-pink-500">Makeuplicious</h2>
+        <p className="mt-4">© 2026 All rights reserved.</p>
       </footer>
     </div>
   );
